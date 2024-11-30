@@ -72,5 +72,6 @@ if WAIT_FOR_CONSOLE:
 
 connect()
 while True:
-  iperf.client(OPT_HOST,OPT_UDP,OPT_REVERSE,length=OPT_LENGTH)
+  iperf.client(OPT_HOST,debug=DEBUG,
+               udp=OPT_UDP,reverse=OPT_REVERSE,length=OPT_LENGTH)
   time.sleep(3)

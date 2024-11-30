@@ -54,8 +54,6 @@ else:
 def pollable_is_sock(pollable, sock):
     return pollable[0] == sock
 
-DEBUG = False
-
 # iperf3 cookie size, last byte is null byte
 COOKIE_SIZE = 37
 
@@ -203,8 +201,6 @@ def make_cookie():
     return cookie
 
 def server(debug=False):
-    global DEBUG
-    DEBUG = debug
     # Listen for a connection
     pool = SocketPool(wifi.radio)
     ai = pool.getaddrinfo('0.0.0.0', 5201)
@@ -219,7 +215,7 @@ def server(debug=False):
 
     # Read client's cookie
     cookie = recvn(s_ctrl, COOKIE_SIZE)
-    if DEBUG:
+    if debug:
         print(cookie)
 
     # Ask for parameters
@@ -229,7 +225,7 @@ def server(debug=False):
     n = struct.unpack('>I', recvn(s_ctrl, 4))[0]
     param = recvn(s_ctrl, n)
     param = json.loads(str(param, 'ascii'))
-    if DEBUG:
+    if debug:
         print(param)
     reverse = param.get('reverse', False)
 
@@ -272,7 +268,7 @@ def server(debug=False):
         for pollable in poll.poll(stats.max_dt_ms()):
             if pollable_is_sock(pollable, s_ctrl):
                 cmd = recvn(s_ctrl, 1)[0]
-                if DEBUG:
+                if debug:
                     print(cmd_string.get(cmd, 'UNKNOWN_COMMAND'))
                 if cmd == TEST_END:
                     running = False
@@ -297,7 +293,7 @@ def server(debug=False):
     n = struct.unpack('>I', recvn(s_ctrl, 4))[0]
     results = recvn(s_ctrl, n)
     results = json.loads(str(results, 'ascii'))
-    if DEBUG:
+    if debug:
         print(results)
 
     # Send our results
@@ -334,8 +330,10 @@ def server(debug=False):
     s_ctrl.close()
     s_listen.close()
 
-def client(host, udp=False, reverse=False, bandwidth=10*1024*1024, length=None):
-    print('CLIENT MODE:', 'UDP' if udp else 'TCP', 'receiving' if reverse else 'sending')
+def client(host, debug=False, udp=False, reverse=False,
+           bandwidth=10*1024*1024, length=None):
+    print('CLIENT MODE:',
+          'UDP' if udp else 'TCP', 'receiving' if reverse else 'sending')
 
     param = {
         'client_version': '3.6',
@@ -366,7 +364,7 @@ def client(host, udp=False, reverse=False, bandwidth=10*1024*1024, length=None):
 
     # Send our cookie
     cookie = make_cookie()
-    if DEBUG:
+    if debug:
         print(cookie)
     s_ctrl.sendall(cookie)
 
@@ -424,7 +422,7 @@ def client(host, udp=False, reverse=False, bandwidth=10*1024*1024, length=None):
             elif pollable_is_sock(pollable, s_ctrl):
                 # Receive command
                 cmd = recvn(s_ctrl, 1)[0]
-                if DEBUG:
+                if debug:
                     print(cmd_string.get(cmd, 'UNKNOWN_COMMAND'))
                 if cmd == TEST_START:
                     if reverse:
