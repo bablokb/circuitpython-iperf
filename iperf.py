@@ -114,7 +114,10 @@ class Stats:
     def max_dt_ms(self):
         if not self.running:
             return -1
-        return max(0, (self.pacing_timer_us - ticks_diff(ticks_us(), self.t1)) // 1000)
+        return max(0,
+                   (self.pacing_timer_us - ticks_diff(ticks_us(), self.t1)) //
+                   (TICK_RESOLUTION/1000)
+                   )
 
     def add_bytes(self, n):
         if not self.running:
