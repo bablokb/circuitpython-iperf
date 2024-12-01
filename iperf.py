@@ -29,14 +29,14 @@ import json
 
 # add some functions not available in CircuitPython
 if hasattr(time,'monotonic_ns'):
-    TICK_RESOLUTION = 1_000_000_000
+    TICKS_PER_SEC = 1_000_000_000
     def ticks_us():
         return time.monotonic_ns()
     def ticks_diff(arg1, arg2):
         return arg1-arg2
 else:
     # only ms resolution available
-    TICK_RESOLUTION = 1000
+    TICKS_PER_SEC = 1000
     _TICKS_PERIOD     = 1<<29
     _TICKS_MAX        = _TICKS_PERIOD-1
     _TICKS_HALFPERIOD = _TICKS_PERIOD//2
@@ -116,7 +116,7 @@ class Stats:
             return -1
         return max(0,
                    (self.pacing_timer_us - ticks_diff(ticks_us(), self.t1)) //
-                   (TICK_RESOLUTION/1000)
+                   (TICKS_PER_SEC/1000)
                    )
 
     def add_bytes(self, n):
@@ -149,8 +149,8 @@ class Stats:
         t2 = ticks_us()
         dt = ticks_diff(t2, self.t1)
         if final or dt > self.pacing_timer_us:
-            ta = ticks_diff(self.t1, self.t0) * TICK_RESOLUTION
-            tb = ticks_diff(t2, self.t0) * TICK_RESOLUTION
+            ta = ticks_diff(self.t1, self.t0) * TICKS_PER_SEC
+            tb = ticks_diff(t2, self.t0) * TICKS_PER_SEC
             #self.print_line(ta, tb, self.nb1, self.np1, self.nm1)
             self.t1 = t2
             self.nb1 = 0
@@ -163,7 +163,7 @@ class Stats:
         self.t3 = ticks_us()
         dt = ticks_diff(self.t3, self.t0)
         print('- ' * 30)
-        self.print_line(0, dt / TICK_RESOLUTION,
+        self.print_line(0, dt / TICKS_PER_SEC,
                         self.nb0, self.np0, self.nm0, '  sender')
 
     def report_receiver(self, stats):
@@ -314,7 +314,7 @@ def server(debug=False):
             'errors': 0,
             'packets': stats.np0,
             'start_time': 0,
-            'end_time': ticks_diff(stats.t3, stats.t0) / TICK_RESOLUTION
+            'end_time': ticks_diff(stats.t3, stats.t0) / TICKS_PER_SEC
         }]
     }
     results = json.dumps(results)
@@ -350,7 +350,7 @@ def client(host, debug=False, udp=False, reverse=False,
         param['udp'] = True
         param['len'] = 1500 - 42 if length is None else length
         param['bandwidth'] = bandwidth # this should be should be intended bits per second
-        udp_interval = TICK_RESOLUTION * 8 * param['len'] // param['bandwidth']
+        udp_interval = TICKS_PER_SEC * 8 * param['len'] // param['bandwidth']
     else:
         param['tcp'] = True
         param['len'] =  3000 if length is None else length
@@ -375,7 +375,7 @@ def client(host, debug=False, udp=False, reverse=False,
     stats = Stats(param)
 
     # Run the main loop, waiting for incoming commands and dat
-    ticks_us_end = param['time'] * TICK_RESOLUTION
+    ticks_us_end = param['time'] * TICKS_PER_SEC
     poll = select.poll()
     poll.register(s_ctrl, select.POLLIN)
     s_data = None
@@ -410,7 +410,7 @@ def client(host, debug=False, udp=False, reverse=False,
                             if t - udp_last_send > udp_interval:
                                 udp_last_send += udp_interval
                                 udp_packet_id += 1
-                                struct.pack_into('>III', buf, 0, t // TICK_RESOLUTION, t % TICK_RESOLUTION, udp_packet_id)
+                                struct.pack_into('>III', buf, 0, t // TICKS_PER_SEC, t % TICKS_PER_SEC, udp_packet_id)
                                 n = s_data.sendto(buf, ai[-1])
                                 stats.add_bytes(n)
                     else:
@@ -475,7 +475,7 @@ def client(host, debug=False, udp=False, reverse=False,
                             'errors': stats.nm0,
                             'packets': stats.np0,
                             'start_time': 0,
-                            'end_time': ticks_diff(stats.t3, stats.t0) / TICK_RESOLUTION
+                            'end_time': ticks_diff(stats.t3, stats.t0) / TICKS_PER_SEC
                         }]
                     }
                     results = json.dumps(results)
