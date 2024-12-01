@@ -11,9 +11,13 @@
 #
 # -----------------------------------------------------------------------------
 
-WAIT_FOR_CONSOLE = True
-RUN_AP           = False
-DEBUG            = False
+wait_for_console = True
+run_ap           = False
+debug            = False
+try:
+  from params import *
+except:
+  pass
 
 import board
 import supervisor
@@ -76,12 +80,12 @@ def connect():
 # --- main   ------------------------------------------------------------------
 
 # wait for console to catch all messages
-if WAIT_FOR_CONSOLE:
+if wait_for_console:
   while not supervisor.runtime.serial_connected:
     time.sleep(0.1)
   print(f"running on board {board.board_id}")
 
-if RUN_AP:
+if run_ap:
   start_ap()
   print(f"starting server on {wifi.radio.ipv4_address_ap}")
 else:
@@ -91,6 +95,6 @@ else:
 while True:
   gc.collect()
   try:
-    iperf.server(debug=DEBUG)
+    iperf.server(debug=debug)
   except BrokenPipeError:
     pass

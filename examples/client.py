@@ -11,12 +11,18 @@
 #
 # -----------------------------------------------------------------------------
 
-WAIT_FOR_CONSOLE = True
-DEBUG            = False
-OPT_HOST         = "192.168.4.1"  # hostname | ipaddress-string
-OPT_UDP          = False          # iperf -u|--udp: use UDP transfers
-OPT_REVERSE      = False          # iperf -R|--reverse: host is sending
-OPT_LENGTH       = 4096           # iperf -l|--length: length of buffer
+# configuration - don't change it here, use params.py instead
+
+wait_for_console = True
+debug            = False
+hostname         = "192.168.4.1"  # hostname | ipaddress-string
+udp              = False          # iperf -u|--udp: use UDP transfers
+reverse          = False          # iperf -R|--reverse: host is sending
+length           = 4096           # iperf -l|--length: length of buffer
+try:
+  from params import *
+except:
+  pass
 
 import board
 import supervisor
@@ -65,13 +71,13 @@ def connect():
 # --- main   ------------------------------------------------------------------
 
 # wait for console to catch all messages
-if WAIT_FOR_CONSOLE:
+if wait_for_console:
   while not supervisor.runtime.serial_connected:
     time.sleep(0.1)
   print(f"running on board {board.board_id}")
 
 connect()
 while True:
-  iperf.client(OPT_HOST,debug=DEBUG,
-               udp=OPT_UDP,reverse=OPT_REVERSE,length=OPT_LENGTH)
+  iperf.client(hostname,debug=debug,
+               udp=udp,reverse=reverse,length=length)
   time.sleep(3)
