@@ -30,7 +30,7 @@ import json
 # add some functions not available in CircuitPython
 if hasattr(time,'monotonic_ns'):
     TICKS_PER_SEC = 1_000_000_000
-    def ticks_us():
+    def ticks():
         return time.monotonic_ns()
     def ticks_diff(arg1, arg2):
         return arg1-arg2
@@ -42,7 +42,7 @@ else:
     _TICKS_HALFPERIOD = _TICKS_PERIOD//2
 
     import supervisor
-    def ticks_us():
+    def ticks():
         return supervisor.ticks_ms()
     def ticks_diff(ticks1, ticks2):
         """ Compute the signed difference between two ticks values,
@@ -91,14 +91,15 @@ def fmt_size(val, div):
 
 class Stats:
     def __init__(self, param):
-        self.pacing_timer_us = param['pacing_timer'] * 1000
+        # pacing_timer is in us, convert to our resolution
+        self.pacing_timer = param['pacing_timer'] * (TICKS_PER_SEC/1e6)
         self.udp = param.get('udp', False)
         self.reverse = param.get('reverse', False)
         self.running = False
 
     def start(self):
         self.running = True
-        self.t0 = self.t1 = ticks_us()
+        self.t0 = self.t1 = ticks()
         self.nb0 = self.nb1 = 0 # num bytes
         self.np0 = self.np1 = 0 # num packets
         self.nm0 = self.nm1 = 0 # num lost packets
@@ -115,7 +116,7 @@ class Stats:
         if not self.running:
             return -1
         return max(0,
-                   (self.pacing_timer_us - ticks_diff(ticks_us(), self.t1)) //
+                   (self.pacing_timer - ticks_diff(ticks(), self.t1)) //
                    (TICKS_PER_SEC/1000)
                    )
 
@@ -146,7 +147,7 @@ class Stats:
     def update(self, final=False):
         if not self.running:
             return
-        t2 = ticks_us()
+        t2 = ticks()
         dt = ticks_diff(t2, self.t1)
         if final or dt > self.pacing_timer_us:
             ta = ticks_diff(self.t1, self.t0) * TICKS_PER_SEC
@@ -160,7 +161,7 @@ class Stats:
     def stop(self):
         self.update(True)
         self.running = False
-        self.t3 = ticks_us()
+        self.t3 = ticks()
         dt = ticks_diff(self.t3, self.t0)
         print('- ' * 30)
         self.print_line(0, dt / TICKS_PER_SEC,
@@ -375,7 +376,7 @@ def client(host, debug=False, udp=False, reverse=False,
     stats = Stats(param)
 
     # Run the main loop, waiting for incoming commands and dat
-    ticks_us_end = param['time'] * TICKS_PER_SEC
+    ticks_end = param['time'] * TICKS_PER_SEC
     poll = select.poll()
     poll.register(s_ctrl, select.POLLIN)
     s_data = None
@@ -385,8 +386,8 @@ def client(host, debug=False, udp=False, reverse=False,
         for pollable in poll.poll(stats.max_dt_ms()):
             if pollable_is_sock(pollable, s_data):
                 # Data socket is writable/readable
-                t = ticks_us()
-                if ticks_diff(t, start) > ticks_us_end:
+                t = ticks()
+                if ticks_diff(t, start) > ticks_end:
                     if reverse:
                         # Continue to drain any incoming data
                         recvinto(s_data, buf)
@@ -431,13 +432,13 @@ def client(host, debug=False, udp=False, reverse=False,
                     if reverse:
                         # Start receiving data now, because data socket is open
                         poll.register(s_data, select.POLLIN)
-                        start = ticks_us()
+                        start = ticks()
                         stats.start()
                 elif cmd == TEST_RUNNING:
                     if not reverse:
                         # Start sending data now
                         poll.register(s_data, select.POLLOUT)
-                        start = ticks_us()
+                        start = ticks()
                         if udp:
                             udp_last_send = start - udp_interval
                         stats.start()
