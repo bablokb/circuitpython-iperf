@@ -19,6 +19,7 @@ hostname         = "192.168.4.1"  # hostname | ipaddress-string
 udp              = False          # iperf -u|--udp: use UDP transfers
 reverse          = False          # iperf -R|--reverse: host is sending
 length           = 4096           # iperf -l|--length: length of buffer
+ttime            = 10             # iperf -t|--time: transmit-time
 try:
   from params import *
 except:
@@ -79,5 +80,5 @@ if wait_for_console:
 connect()
 while True:
   iperf.client(hostname,debug=debug,
-               udp=udp,reverse=reverse,length=length)
+               udp=udp,reverse=reverse,length=length,ttime=ttime)
   time.sleep(3)

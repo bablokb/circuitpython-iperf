@@ -149,7 +149,7 @@ class Stats:
             return
         t2 = ticks()
         dt = ticks_diff(t2, self.t1)
-        if final or dt > self.pacing_timer_us:
+        if final or dt > self.pacing_timer:
             ta = ticks_diff(self.t1, self.t0) * TICKS_PER_SEC
             tb = ticks_diff(t2, self.t0) * TICKS_PER_SEC
             #self.print_line(ta, tb, self.nb1, self.np1, self.nm1)
@@ -335,7 +335,7 @@ def server(debug=False):
     s_listen.close()
 
 def client(host, debug=False, udp=False, reverse=False,
-           bandwidth=10*1024*1024, length=None):
+           bandwidth=10*1024*1024, length=None, ttime=10):
     print('CLIENT MODE:',
           'UDP' if udp else 'TCP', 'receiving' if reverse else 'sending')
 
@@ -344,14 +344,14 @@ def client(host, debug=False, udp=False, reverse=False,
         'omit': 0,
         'parallel': 1,
         'pacing_timer':1000,
-        'time': 10,
+        'time': ttime,
+        'bandwidth': bandwidth
     }
 
     if udp:
         param['udp'] = True
         param['len'] = 1500 - 42 if length is None else length
-        param['bandwidth'] = bandwidth # this should be should be intended bits per second
-        udp_interval = TICKS_PER_SEC * 8 * param['len'] // param['bandwidth']
+        udp_interval = TICKS_PER_SEC * 8 * param['len'] // bandwidth
     else:
         param['tcp'] = True
         param['len'] =  3000 if length is None else length
@@ -369,7 +369,7 @@ def client(host, debug=False, udp=False, reverse=False,
     # Send our cookie
     cookie = make_cookie()
     if debug:
-        print(cookie)
+        print(f"Cookie: {cookie}")
     s_ctrl.sendall(cookie)
 
     # Object to gather statistics about the run
