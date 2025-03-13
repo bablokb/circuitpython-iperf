@@ -1,13 +1,8 @@
 CircuitPython-Library supporting the iperf Protocol
 ===================================================
 
-**Work in progress**
-
 This is a port of Damian George's version downloaded from
 <https://pypi.org/project/uiperf3/>.
-
-The interface for the client is likely to change a bit to allow more
-tweaking of parameters. Currently only tested on a Pico-W.
 
 See `examples/`-directory for a server and client program.
 
